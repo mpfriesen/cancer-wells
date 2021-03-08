@@ -1,8 +1,0 @@
-{
-"type": "FeatureCollection",
-"name": "city_data",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-"features": [
-{ "type": "Feature", "properties": { "id": 2, "city": "Portland", "holc_map": "1gdiol06", "parcel_map": "2jpoev48", "breaks": [ 0, 295000, 344500, 391460, 439725, 494660, 568250, 692520 ] }, "geometry": { "type": "MultiPolygon", "coordinates": [ [ [ [ -123.1, 45.7 ], [ -122.2, 45.7 ], [ -122.2, 45 ], [ -123.1, 45 ], [ -123.1, 45.7 ] ] ] ] } }
-]
-}
