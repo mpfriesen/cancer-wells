@@ -18,9 +18,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
     <script src="https://kit.fontawesome.com/4b7b7915d1.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="css/style.css">
-	<link href="css/address.css" rel='stylesheet' type='text/css' />
+	<link href="css/dark.css" rel='stylesheet' type='text/css' />
 	<style>
-    	.nitr_grid_switch,.cancer_grid_switch { display: none; }
+    	.nitr_grid_switch,.regress_grid_switch { display: none; }
+    	.error-text { font-size: 11px; color: #e00; font-weight: bold;margin-top: 4px; }
+    	.reset-btn { margin-left: 5px; }
+    	#export-file { margin-top: 40px; display: none; }
     </style>
 </head>
 
@@ -31,83 +34,112 @@
 
   </div>
     <!-- <nav id="menu" style="display:none"></nav> -->
-
-    <form class="layer-checks">
-<!--
-        <div class="btn-group btn-group-sm" role="group" aria-label="Basic example">
-          <button type="button" data-layer="cancer_tracts" class="btn btn-secondary cancer_tracts active">Cancer rates</button>
-          <button type="button" data-layer="nitrate_wells" class="btn nitrate_wells btn-secondary">Nitrate levels</button>
-          <button type="button" data-layer="grid" class="btn grid btn-secondary">Grid</button>
+    <div class="right-panels">
+        <form class="layer-checks">
+    <!--
+            <div class="btn-group btn-group-sm" role="group" aria-label="Basic example">
+              <button type="button" data-layer="cancer_tracts" class="btn btn-secondary cancer_tracts active">Cancer rates</button>
+              <button type="button" data-layer="nitrate_wells" class="btn nitrate_wells btn-secondary">Nitrate levels</button>
+              <button type="button" data-layer="grid" class="btn grid btn-secondary">Grid</button>
+            </div>
+    -->
+            <div class="custom-control custom-switch cancer_tracts_switch">
+              <input type="checkbox" class="custom-control-input" data-legend="tract" data-others="" data-layer="cancer_tracts" id="customSwitch1" checked>
+              <label class="custom-control-label" for="customSwitch1">Cancer rates</label>
+            </div>
+            <div class="custom-control custom-switch nitrate_wells_switch">
+              <input type="checkbox" class="custom-control-input" data-legend="wells" data-others="" data-layer="nitrate_wells" id="customSwitch2">
+              <label class="custom-control-label" for="customSwitch2">Nitrate levels</label>
+            </div>
+            <div class="custom-control custom-switch nitr_grid_switch">
+              <input type="checkbox" class="custom-control-input" data-legend="interp" data-others="hide" data-layer="nitr_grid" id="customSwitch3">
+              <label class="custom-control-label" for="customSwitch3">Nitrate grid</label>
+            </div>
+            <div class="custom-control custom-switch regress_grid_switch">
+              <input type="checkbox" class="custom-control-input" data-legend="stdev" data-others="hide" data-layer="regress_grid" id="customSwitch4">
+              <label class="custom-control-label" for="customSwitch4">Regression grid</label>
+            </div>
+        </form>
+        <hr>
+        <div class="legends tract-legend">
+            <h6>Cancer rates</h6>
+            <p>Cancer incidence per 100,000 population by Census tract.</p>
+            <table class="legend">
+                <tr class="class_0"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_1"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_2"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_3"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_4"><td class="grade"></td><td class="desire"></td></tr>
+            </table>
         </div>
--->
-        <div class="custom-control custom-switch">
-          <input type="checkbox" class="custom-control-input" data-layer="cancer_tracts" id="customSwitch1" checked>
-          <label class="custom-control-label" for="customSwitch1">Cancer rates</label>
+        <div class="legends wells-legend">
+            <h6>Nitrate levels</h6>
+            <p>Nitrate levels found in wells in parts per million.</p>
+            <table class="legend">
+                <tr class="class_0"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_1"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_2"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_3"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_4"><td class="grade"></td><td class="desire"></td></tr>
+            </table>
         </div>
-        <div class="custom-control custom-switch">
-          <input type="checkbox" class="custom-control-input" data-layer="nitrate_wells" id="customSwitch2">
-          <label class="custom-control-label" for="customSwitch2">Nitrate levels</label>
+        <div class="legends interp-legend">
+            <h6>Nitrate levels</h6>
+            <p>Nitrate interpolated from well measurements in parts per million.</p>
+            <table class="legend">
+                <tr class="class_0"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_1"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_2"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_3"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_4"><td class="grade"></td><td class="desire"></td></tr>
+            </table>
+            <div class="regression"></div>
         </div>
-        <div class="custom-control custom-switch nitr_grid_switch">
-          <input type="checkbox" class="custom-control-input" data-layer="nitr_grid" id="customSwitch3">
-          <label class="custom-control-label" for="customSwitch3">Nitrate grid</label>
+        <div class="legends stdev-legend">
+            <h6>Predicted v. observed rates</h6>
+            <p>The difference in each area between the predicted cancer rate and the observed rate in standard deviations.</p>
+            <table class="legend">
+                <tr class="class_0"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_1"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_2"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_3"><td class="grade"></td><td class="desire"></td></tr>
+                <tr class="class_4"><td class="grade"></td><td class="desire"></td></tr>
+            </table>
+            <div class="regression"></div>
         </div>
-        <div class="custom-control custom-switch cancer_grid_switch">
-          <input type="checkbox" class="custom-control-input" data-layer="regress_grid" id="customSwitch4">
-          <label class="custom-control-label" for="customSwitch4">Regression grid</label>
-        </div>
+    </div>
 
-
-
-
-    </form>
     <div id='map'>
     </div>
-    <div class="info">
-        <div class="pcounty"></div>
-        <div class="pname"></div>
-        <div class="elex"></div>
-        <div class="val"></div>
+    <div id="loading-background" class='flex-parent flex-parent--center-cross flex-parent--center-main absolute top right bottom left bg-darken10 z5'>
+        <div id="spinner" class='flex-child loading'></div>
     </div>
-<!--
-    	<div class="input-append input-prepend">
-			<span class="add-on"><i class="fa fa-search"></i></span><input type="text" id="q" onfocus="this.value=''" placeholder="Enter a metro-area address...">
-		</div>
--->
+
 
         <div class="left-panels left-top">
             <div id="overview">
-              <h6>Overview</h6>
-              <p>Use the search box to zoom to a specific location.</p>
-              <p>Toggle buttons to view single family home parcels, HOLC neighborhood boundaries, historic HOLC maps, and demographics layers.</p>
-              <p>Click on a parcel or demographic block for further details on that location</p>
-              <hr>
-              <button type="button" data-layer="grid-btn" class="btn btn-secondary gridbtn">Submit</button>
-              <hr>
-              <h6>HOLC Grades</h6>
-              <p>1930s HOLC neighborhood loan desirability grades:</p>
-              <table class="holc-grades">
-                <tr><td class="grade holc-green">A</td><td class="desire">Best</td></tr>
-                <tr><td class="grade holc-blue">B</td><td class="desire">Desirable</td></tr>
-                <tr><td class="grade holc-yellow">C</td><td class="desire">Declining</td></tr>
-                <tr><td class="grade holc-red">D</td><td class="desire">Hazardous</td></tr>
-              </table>
-              <hr>
-              <h6>Sources</h6>
-              <p>HOLC Maps: <a href="https://dsl.richmond.edu/panorama/redlining/#loc=5/41.216/-94.58&text=downloads">Mapping Inequality</a></p>
-              <p>2018 USA Demographics: <a href="https://www.arcgis.com/home/item.html?id=2718975e52e24286acf8c3882b7ceb18">ESRI Popular Demographics</a></p>
-              <p>Parcels: <a href="https://www.nconemap.gov/datasets/1de3d7d828ce4813b838ddf055b40317_1">NC OneMap, </a>
-                          <a href="http://opendata.minneapolismn.gov/datasets/assessors-parcel-data-2020">Open Minneapolis, </a>
-                          <a href="https://www.hennepin.us/gisopendata">Hennepin County, </a>
-                          <a href="https://dcp-coaplangis.opendata.arcgis.com/">Atlanta Department of City Planning, </a>
-                          <a href="https://data-cityofmadison.opendata.arcgis.com/datasets/tax-parcels-assessor-property-information">City of Madison, </a>
-                          <a href="http://rlisdiscovery.oregonmetro.gov/">Metro Regional Government</a>
-              </p>
-              <hr>
-              <p><small>Map designed and created by Mark Friesen, Kerry Hanko, and Liz Puhl</small></p>
+              <h6>Analyze the data</h6>
+              <p>Enter a hexbin size and a distance decay coefficient (between 1.5 and 2.5 is recommended) to examine the evidence of a link between nitrate levels in the drinking water and cancer incidence rates.</p>
+                <form>
+                  <div class="form-group">
+                    <input type="text" class="form-control form-control-sm" onkeypress="return isValid(this,event)" id="hexbin_size" aria-describedby="emailHelp" placeholder="Hexbin size (km.)">
+                  </div>
+                  <div class="form-group">
+                    <input type="text" class="form-control form-control-sm" onkeypress="return isValid(this,event)" id="coeff" placeholder="Coefficient">
+                    <div class="error-text"></div>
+                  </div>
+                  <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+                   <button type="button" data-layer="grid-btn" class="btn btn-sm btn-secondary gridbtn">Submit</button>
+                   <button type="button" data-layer="reset-btn" class="btn btn-sm btn-secondary reset-btn disabled">Reset</button>
+                  </div>
+                </form>
+                <div id="export-file">
+                    <p>Export grid file as GeoJSON</p>
+                    <a href="#" id="export"><button type="button" data-layer="export-btn" class="btn btn-sm btn-secondary export-btn">Export</button></a>
+                </div>
+<!--               <p><small>Map designed and programmed by Mark Friesen</small></p> -->
             </div>
         </div>
-        <div class="left-panels left-bottom" id="legend"></div>
 
         <!-- Modal -->
 <!--

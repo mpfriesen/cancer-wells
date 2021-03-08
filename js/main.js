@@ -1,60 +1,51 @@
+
 function addCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-function resetSwitcher(layer) {
-    $(".layer-checks .btn").removeClass("active");
-    $(".layer-checks .btn."+layer).addClass("active");
-}
+//validation function that prevents non-numerical characters being input in input field
+function isValid(el, evnt) { 
+    var charC = (evnt.which) ? evnt.which : evnt.keyCode; 
+    if (charC == 46) { 
+        if (el.value.indexOf('.') === -1) { 
+            return true; 
+        } else { 
+            return false; 
+        } 
+    } else { 
+        if (charC > 31 && (charC < 48 || charC > 57)) 
+            return false; 
+    } 
+    return true; 
+} 
+
+
+
 
 function getBreaks(dataSource,breaks) {
-
-    // Create an empty array to store the cancer rates
     var values = [];
-
-    // Loop through each feature to get its cancer rate
     $.each(dataSource,function (k,v) {
         var value = v;
-
-        // Push each number into the array
         values.push(value);
     });
-
-    // Determine 5 clusters of statistically similar values, sorted in ascending order
     var breaks = ss.equalIntervalBreaks(values, breaks);
-
-    // Return the array of class breaks
     return breaks;
-
 }        
 
 
+
 function getRegression(collected) {
+    var rates_array = [],
+        obs_array = [];
 
-    // Loop through the hexbin layer with nitrate concentrations and cancer rates
-    // Create a two-dimensional array of [x, y] pairs where x is the nitrate concentration and y is the cancer rate
-
-    // Loop through each of the collected hexbins
     for (var i in collected.features) {
-
-        // Create a shorthand variable to access the layer properties
         var p = collected.features[i].properties;
-
-        // Create variables to store the interpolated nitrate concentration and cancer rate
         var interp_nitrate = p.nitr_ran;
         var interp_cancer = p.canrate;
-
-        // Create an array for the current feature of [nitrate concentration, cancer rate]
         var nitr_cancer = [parseFloat(interp_nitrate), parseFloat(interp_cancer)];
-
-        // Push the array of the current feature's nitrate concentration and cancer rate into an array
         rates_array.push(nitr_cancer);
-
     }
 
-    // Run the linearRegression method from the Simple Statistics library to return an object containing the slope and intercept of the linear regression line
-    // where nitrate concentration is the independent variable (x) and cancer rate is the dependent variable (y)
-    // The object returns m (slope) and b (y-intercept) that can be used to predict cancer rates (y) using the equation, y = mx + b
     var regress_eq = ss.linearRegression(rates_array);
 
     // Create variables for the slope and y-intercept
@@ -66,18 +57,10 @@ function getRegression(collected) {
 
     // Loop through each of the collected hexbins
     for (var j in collected.features) {
-
-        // Create a shorthand variable to access the layer properties
         var collected_p = collected.features[j].properties;
-        
-        // Create variables to store the interpolated nitrate concentration and cancer rate
         var collected_nitr = collected_p.nitr_ran;
         var collected_canrate = collected_p.canrate;
-
-        // Use the slope and y-intercept from the regression equation to calculate the predicted cancer rate from the interpolated nitrate concentration
         var pre_canrate = m * (parseFloat(collected_nitr)) + b;
-
-        // Calculate the residual (pre_canrate - interpolatedCancerRate)
         var residual = pre_canrate - collected_canrate;
 
         // Add the predicted cancer rate and residual to the collected hexbin
@@ -92,101 +75,28 @@ function getRegression(collected) {
 
     }
     
-    // Calculate the r-squared for the regression (https://simplestatistics.org/docs/#rSquared)
-    // The function requires a linear regression line (https://simplestatistics.org/docs/#linearregressionline) and an array of nitrate concentration and cancer rate pairs
-    
     // Build the linear regression line from the regression equation
     var regress_ln = ss.linearRegressionLine(regress_eq);
     
     // Calculate the r-squared
     var r_squared = parseFloat(ss.rSquared(obs_array, regress_ln)).toFixed(5); // 1 is a perfect fit, 0 indicates no correlation
     console.log("r-Squared: " + r_squared);
-/*
     
-    // Show the regression equation and r-squared labels and values in the sidebar
-    $('#regress_eqLabel').show();
-    $('#regress_eq').show();
-    $('#r_squaredLabel').show();    
-    $('#r_squared').show();
+    var statblock = "<div class='eq_line'><strong>Regression equation:</strong> <span class='equation'>"+regress_eq_disp+"</span></div>"
+        +   "<div class='r2_line'><strong>R-squared:</strong> <span class='rsquared'>"+r_squared+"</span></div>";
+        
+    $(".regression").html(statblock);
     
-    // Select the regression equation inside the regress_eq div element's span tag and update it to the calculated regression equation
-    var regress_eqDiv = $('#regress_eq');
-    regress_eqDiv.html(regress_eqFormatted);
-    
-    // Select the r-squared inside the regress_eq div element's span tag
-    var r_squaredDiv = $('#r_squared');
-    r_squaredDiv.html(r_squared);
-
-    // Convert the collected hexbins to a Leaflet GeoJson layer and add it to the regression residuals layer group
-    regressionFeaturesHexbins = L.geoJson(collected, {
-
-        // Set a default style for the collected hexbins
-        style: function (feature) {
-            return {
-                color: '#999999', // Stroke Color
-                weight: 0.5, // Stroke Weight
-                fillOpacity: 0.5, // Override the default fill opacity
-                opacity: 0.5 // Border opacity
-            };
-        }
-
-    }).addTo(regressionResidualsLayerGroup);
-
-    // Get the class breaks based on the ckmeans classification method
-    var breaks = getRegressionResidualClassBreaks(regressionFeaturesHexbins);
-
-    // Loop through each feature, set its symbology, and build and bind its popup
-    regressionFeaturesHexbins.eachLayer(function (layer) {
-
-        // Set its color based on the residual between the predicted and observed cancer rate
-        layer.setStyle({
-            fillColor: getRegressionResidualColor(layer.feature.properties.residual, breaks)
-        });
-
-        // Set the most accurately predicted hexbins to 10% opacity, so more of the basemap shows through
-        if (getRegressionResidualColor(layer.feature.properties.residual, breaks) == '#f7f7f7') {
-            layer.setStyle({
-                fillOpacity: 0.1
-            });
-        }
-
-        // Build the popup for the feature
-        var popup = "<b>Nitrate Concentration: </b>" + layer.feature.properties.nitr_ran.toFixed(2) + " ppm" + "<br/>" +
-            "<b>Observed Cancer Rate: </b>" + (layer.feature.properties.canrate * 100).toFixed(2).toLocaleString() + "% of census tract population" + "<br/>" +
-            "<b>Predicted Cancer Rate: </b>" + (layer.feature.properties.pre_canrate * 100).toFixed(2).toLocaleString() + "% of census tract population";
-
-        // Bind the popup to the feature
-        layer.bindPopup(popup);
-
-    });
-
-    // Move the regression residuals to the front
-    regressionFeaturesHexbins.bringToFront();
-
-    // Turn off the interpolation layers
-    map.removeLayer(nitrateRatesIDWLayerGroup);
-    map.removeLayer(joinedCancerNitrateRatesIDWLayerGroup);
-
-    // Draw the legend for the regression residuals
-    drawRegressionResidualsLegend(breaks);
-*/
 
 } 
 
-
+// get standard deviation breaks for residual map styling
 function getRegressBreaks(regress_grid) {
-    // Create an empty array to store the residuals
     var values = [];
-
-    // Loop through each feature to get its residual
     $.each(regress_grid.features,function (k,v) {
         var value = v.properties.residual;
-
-        // Push each residual into the array
         values.push(value);
     });
-
-    // Use Simple Statistics to get the standard deviation of the residuals (https://simplestatistics.org/docs/#standarddeviation)
     var st_dev = ss.sampleStandardDeviation(values);
 
     // Create an array of the break points for -2, -1, 0, 1, and 2 standard deviations
@@ -194,152 +104,435 @@ function getRegressBreaks(regress_grid) {
 
     console.log("Standard Deviation of Residuals: " + parseFloat(st_dev).toFixed(5));
     console.log(breaks);
-    // Return the array of class breaks
     return breaks;
 
 }        
 
+//removes grid layers and sources added in the makeGrid function
+function removeGrids() {
+    if (map.getSource('collected')) { map.removeLayer('nitr_grid');  map.removeLayer('regress_grid'); map.removeSource('collected'); }
+    if (map.getSource('border')) { map.removeLayer('border'); map.removeSource('border'); }
+}
 
-
-
-
-    var cancertractData = {};
-    var tract_canrate = [];
-    var wellids = {};
-    var rates_array = [];
-    var obs_array = [];
-
-    //pull in geojson  and loop through it to make some arrays for later use
-    $.ajax({
-        type: 'GET',
-        async: false,
-        url: 'data/cancer_tracts.geojson',
-        data: { get_param: 'value' },
-        dataType: 'json',
-        success: function (data) {
-            tractdata = data;
-            $.each(data.features, function(k, v) {
-                tract_canrate.push(v.properties.canrate);
-/*
-                p = v.properties;
-                g = v.geometry;
-*/
-            })
-         }
-    });
-    //get breaks for 
-    cancer_breaks = getBreaks(tract_canrate,5)
-    reds = ['#fef0d9','#fdcc8a','#fc8d59','#e34a33','#b30000'];
-    orPu = ['#e66101','#fdb863','#f7f7f7','#b2abd2','#5e3c99'];
-
-    $.ajax({
-        type: 'GET',
-        async: false,
-        url: 'data/well_nitrate.geojson',
-        data: { get_param: 'value' },
-        dataType: 'json',
-        success: function (data) {
-            welldata = data;
-/*
-            $.each(data.features, function(k, v) {
-                welldata = data;
-                wellids[v.properties.TARGET_FID] = k;
-                p = v.properties;
-                g = v.geometry;
-            })
-*/
-         }
-    });
-
-    $.ajax({
-        type: 'GET',
-        async: false,
-        url: 'data/cancer_tracts_cent.geojson',
-        data: { get_param: 'value' },
-        dataType: 'json',
-        success: function (data) {
-            cancerdata = data;
-         }
-    });
-
-    $.ajax({
-        type: 'GET',
-        async: false,
-        url: 'data/wisconsin.geojson',
-        data: { get_param: 'value' },
-        dataType: 'json',
-        success: function (data) {
-            border = data;
-         }
-    });
-
-    var layers = ['cancer_tracts','nitrate_wells','grid','cancer_grid'];
-    mapbox_path = "mapbox://mfriesenwisc.";
-
-    mapboxgl.accessToken = 'pk.eyJ1IjoibWZyaWVzZW53aXNjIiwiYSI6ImNqenhjcjAzYjBlc3QzbmtpODI1YXZxNmgifQ.Zz-z-Ykof8NbNaQOdR6ouQ';
-    var map = new mapboxgl.Map({
-      container: 'map', // container id
-      style: 'mapbox://styles/mapbox/dark-v10',
-      fitBounds: [-122.5795,45.5283],
-      zoom: 3
-    });
+//resets map back to load state
+function resetMap() {
+    removeGrids();
+    $('.layer-checks input').prop("checked", false);
+    $('.legends,.nitr_grid_switch,.regress_grid_switch,#export-file').hide();
+    $('#hexbin_size,#coeff').val('')
     map.fitBounds([[-92.75,42.4],[-86.86,47]], {padding: {top: 100, bottom: 0, left: 200, right: 200} });
+    map.setLayoutProperty('nitrate_wells', 'visibility', 'none');
+    map.setLayoutProperty('cancer_tracts', 'visibility', 'visible');
+    $('.cancer_tracts_switch input').prop( "checked", true );
+    $('.tract-legend').show();
+    $('.reset-btn').addClass('disabled');
+}
 
-    var nav = new mapboxgl.NavigationControl({showCompass:false});
-    map.addControl(nav,'top-left');
-    var hoveredStateId = null;
 
-    $(".info").on("click",function() {
-        $(this).hide();
+
+
+var tract_canrate = [],
+    well_nitrate = [],
+    reds = ['#fef0d9','#fdcc8a','#fc8d59','#e34a33','#b30000'],
+    orPu = ['#e66101','#fdb863','#f7f7f7','#b2abd2','#5e3c99'],
+    blues = ['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'],
+    devs = ['< -2 Std. Dev.', '-2 Std. Dev. - -1 Std. Dev.', '-1 Std. Dev. - 1 Std. Dev.', '1 Std. Dev. - 2 Std. Dev.', '> 2 Std. Dev.'];
+
+
+//get geojson data for tracts, wells and the state border
+$.ajax({
+    type: 'GET',
+    async: false,
+    url: 'data/cancer_tracts.geojson',
+    data: { get_param: 'value' },
+    dataType: 'json',
+    success: function (data) {
+        tractdata = data;
+        $.each(data.features, function(k, v) {
+            tract_canrate.push(v.properties.canrate);
+        })
+     }
+});
+
+var break_num = 5;
+var cancer_breaks = getBreaks(tract_canrate,break_num);
+
+
+
+$.ajax({
+    type: 'GET',
+    async: false,
+    url: 'data/well_nitrate.geojson',
+    data: { get_param: 'value' },
+    dataType: 'json',
+    success: function (data) {
+        welldata = data;
+         $.each(data.features, function(k, v) {
+            well_nitrate.push(v.properties.nitr_ran);
+        })
+    }
+});
+
+var well_breaks = getBreaks(well_nitrate,break_num);
+for (var i=0;i<break_num;i++) {
+    $('.tract-legend tr.class_'+i+' td.grade').css({'background-color':reds[i]});
+    $('.tract-legend tr.class_'+i+' td.desire').text(cancer_breaks[i].toFixed(1)*1000+'-'+cancer_breaks[i+1].toFixed(1)*1000);
+    $('.wells-legend tr.class_'+i+' td.grade').css({'background-color':blues[i]});
+    $('.wells-legend tr.class_'+i+' td.desire').text(well_breaks[i].toFixed(1)+'-'+well_breaks[i+1].toFixed(1));
+    $('.stdev-legend tr.class_'+i+' td.grade').css({'background-color':orPu[i]});
+    $('.stdev-legend tr.class_'+i+' td.desire').text(devs[i]);
+}
+
+$.ajax({
+    type: 'GET',
+    async: false,
+    url: 'data/cancer_tracts_cent.geojson',
+    data: { get_param: 'value' },
+    dataType: 'json',
+    success: function (data) {
+        cancerdata = data;
+     }
+});
+
+$.ajax({
+    type: 'GET',
+    async: false,
+    url: 'data/wisconsin.geojson',
+    data: { get_param: 'value' },
+    dataType: 'json',
+    success: function (data) {
+        border = data;
+     }
+});
+
+var layers = ['cancer_tracts','nitrate_wells','regress_grid','nitr_grid'];
+mapbox_path = "mapbox://mfriesenwisc.";
+
+mapboxgl.accessToken = 'pk.eyJ1IjoibWZyaWVzZW53aXNjIiwiYSI6ImNqenhjcjAzYjBlc3QzbmtpODI1YXZxNmgifQ.Zz-z-Ykof8NbNaQOdR6ouQ';
+var map = new mapboxgl.Map({
+  container: 'map', // container id
+  style: 'mapbox://styles/mapbox/dark-v10',
+  zoom: 3
+});
+map.fitBounds([[-92.75,42.4],[-86.86,47]], {padding: {top: 100, bottom: 0, left: 200, right: 200} });
+
+var nav = new mapboxgl.NavigationControl({showCompass:false});
+map.addControl(nav,'top-left');
+var hoveredStateId = null;
+
+$(".reset-btn").on("click",function() {
+    resetMap();
+})
+
+
+map.on('load',function() {
+    var maplayers = map.getStyle().layers;
+    
+    // Find the index of the first symbol layer in the map style;
+    var firstSymbolId;
+    for (var i = 0; i < maplayers.length; i++) {
+        if (maplayers[i].type === 'symbol') {
+            firstSymbolId = maplayers[i].id;
+            break;
+        }
+    }
+
+    
+    $('.gridbtn').on("click",function(){
+        var hex_size = Number($('#hexbin_size').val());
+        var exp = Number($('#coeff').val());
+        if (exp<1) {
+            $('.error-text').text('Please enter a number greater than 1');
+            $('#coeff').val('');
+        } else {
+            makeGrid(hex_size,exp);
+        }
     })
     
+    
+    //add geojson data as source for map layers
+    map.addSource('tracts', {
+        'type': 'geojson',
+        'data': tractdata,
+        'generateId': true
+    });
 
-    map.on('load',function() {
+    map.addSource('wells', {
+        'type': 'geojson',
+        'data': welldata,
+        'generateId': true
+    });
 
-        var maplayers = map.getStyle().layers;
-        // Find the index of the first symbol layer in the map style
-        var firstSymbolId;
-        for (var i = 0; i < maplayers.length; i++) {
-            if (maplayers[i].type === 'symbol') {
-                firstSymbolId = maplayers[i].id;
-                break;
+
+    //add different map layers
+
+    map.addLayer({
+        'id': 'cancer_tracts',
+        'type': 'fill',
+        'source': 'tracts',
+        'layout': { 'visibility': 'visible' },
+        'paint': {
+            'fill-opacity': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                0.6,
+                1
+            ],
+            'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['get','canrate'],    
+                cancer_breaks[0],
+                reds[0],
+                cancer_breaks[1],
+                reds[1],
+                cancer_breaks[2],
+                reds[2],
+                cancer_breaks[3],
+                reds[3],
+                cancer_breaks[4],
+                reds[4],
+            ],
+            'fill-outline-color': '#aaaaaa'
+        }
+    },firstSymbolId)
+    
+    map.addLayer({
+        'id': 'nitrate_wells',
+        'type': 'circle',
+        'source': 'wells',
+        'layout': { 'visibility': 'none' },
+        'paint': {
+            'circle-radius': 3,
+            'circle-color': [
+                'interpolate',
+                ['linear'],
+                ['get','nitr_ran'],
+                 -2,
+                '#ffffcc',
+                3.4,
+                '#a1dab4',
+                6.8,
+                '#41b6c4',
+                10.2,
+                '#2c7fb8',
+                13.6,
+                '#2c7fb8'
+           ]
+        }
+        
+
+    },firstSymbolId)
+        now = ["cancer_tracts","nitrate_wells"];
+
+/*
+        map.on('click', function(e) {
+            var features = map.queryRenderedFeatures(e.point, {
+                layers: now
+            });
+            if (!features.length) {
+                return;
+            }
+            var feature = features[0];
+            console.log(feature.properties);
+
+            var popup = new mapboxgl.Popup()
+                .setLngLat(map.unproject(e.point))
+                .setHTML('<h3>Collision Detail</h3>' +
+                    '<ul>' +
+                    '<li>Year: <b>' + feature.properties.YEAR + '</b></li>' +
+                    '<li>Pedestrian Injuries: <b>' + feature.properties.PED_INJ + '</b></li>' +
+                    '<li>Pedestrian Fatalities: <b>' + feature.properties.PED_KIL + '</b></li>' +
+                    '<li>Cyclist Injuries: <b>' + feature.properties.CYC_INJ + '</b></li>' +
+                    '<li>Cyclist Fatalities: <b>' + feature.properties.CYC_KIL + '</b></li>' +
+                    '</ul>')
+                .addTo(map);
+        });
+*/
+
+
+
+
+    
+    // loop through layers to add listeners to each
+         map.on('click', "cancer_tracts", function (e) {
+            new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML("<strong>Cancer rate:</strong> "+(e.features[0].properties.canrate*1000).toFixed())
+            .addTo(map);
+        });
+        map.on('mouseenter', "cancer_tracts", function() {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+         map.on('click', "nitrate_wells", function (e) {
+            new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"ppm")
+            .addTo(map);
+        });
+        map.on('mouseenter', "nitrate_wells", function() {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+         map.on('click', "nitr_grid", function (e) {
+            new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"ppm")
+            .addTo(map);
+        });
+        map.on('mouseenter', "nitr_grid", function() {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+         map.on('click', "regress_grid", function (e) {
+            var p = e.features[0].properties;
+            var html = "<div class='pophed'>Cancer incidence per 100,000</div>"
+                + "<div><strong>Predicted rate:</strong> "+(p.pre_canrate*1000).toFixed()+"</div>"
+                + "<div><strong>Observed rate:</strong> "+(p.canrate*1000).toFixed()+"</div>";
+            new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(html)
+            .addTo(map);
+        });
+        map.on('mouseenter', "nitr_grid", function() {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+
+
+
+
+
+/*
+        map.on('mousemove', layer, function(e) {
+            if (e.features.length > 0) {
+                if (hoveredStateId) {
+                    map.setFeatureState(
+                        { source: 'tracts', id: hoveredStateId },
+                        { hover: false }
+                    );
+                }
+                hoveredStateId = e.features[0].id;
+                map.setFeatureState(
+                    { source: 'tracts', id: hoveredStateId },
+                    { hover: true }
+                );
+            }
+        });
+        map.on('mouseleave', layer, function() {
+            map.getCanvas().style.cursor = '';
+            if (hoveredStateId) {
+                map.setFeatureState(
+                    { source: 'tracts', id: hoveredStateId },
+                    { hover: false }
+                );
+            }
+        });
+*/
+
+
+
+    // make a pointer cursor
+    map.getCanvas().style.cursor = 'default';
+   
+
+    //Code for layer toggle
+    $(".layer-checks").show();
+    $(".layer-checks input").on("change",function(e) {
+        var thisLayer = $(this).data("layer");
+        var thisLegend = $(this).data("legend");
+        var thisHide = $(this).data("others");
+        if (thisHide=='hide') {
+            $('.legends').hide();
+            $.each(layers,function(k,v) {
+               map.setLayoutProperty(v, 'visibility', 'none'); 
+            })
+            $('.layer-checks input').prop("checked", false);
+            $('.'+thisLayer+'_switch input').prop("checked", true);
+            map.setLayoutProperty(thisLayer, 'visibility', 'visible');
+        }
+        if (e.target.checked) {
+            $("."+thisLegend+"-legend").show();
+        } else {
+            $("."+thisLegend+"-legend").hide();
+        }
+        
+        map.setLayoutProperty(
+            thisLayer,
+            'visibility',
+            e.target.checked ? 'visible' : 'none'
+        );
+    })
+
+
+    //function that makes grids and runs analysis on interpolated data given parameters input by user        
+    function makeGrid(size,exp) {
+        removeGrids();
+        $(".regression").html("");
+        $(".tract-legend").hide();
+        $('.error-text').text('');
+        $('.reset-btn').removeClass('disabled');
+        $('.layer-checks input').prop("checked", false);
+        map.setLayoutProperty('cancer_tracts', 'visibility', 'none');
+        $('.nitr_grid_switch,.regress_grid_switch,.interp-legend,#export-file').show();
+        $('.nitr_grid_switch input').prop( "checked", true );
+    
+        var nitr_options = {gridType: 'polygon', property: 'nitr_ran', units: 'kilometers', gridType: 'hex', weight: exp};
+        var nitr_grid = turf.interpolate(welldata, size, nitr_options);
+    
+        grid_nitrate = [];
+        $.each(nitr_grid.features, function(k, v) {
+            grid_nitrate.push(v.properties.nitr_ran);
+        });
+        nitr_breaks = getBreaks(grid_nitrate,break_num);
+        for (var i=0;i<break_num;i++) {
+            $('.interp-legend tr.class_'+i+' td.grade').css({'background-color':blues[i]});
+            $('.interp-legend tr.class_'+i+' td.desire').text(nitr_breaks[i].toFixed(1)+'-'+nitr_breaks[i+1].toFixed(1));
+        }
+        
+        var cancer_options = { gridType: 'point', property: 'canrate', units: 'kilometers', weight: exp };
+        var cancer_grid = turf.interpolate(cancerdata, size, cancer_options);
+    
+        collected = turf.collect(nitr_grid, cancer_grid, 'canrate', 'values');
+            
+        // Loop through collected hexbins, sum the array of cancer rates for points inside and calculate mean
+        for (var i in collected.features) {
+            var canrates = collected.features[i].properties.values;
+            canrates_sum = canrates.reduce((pv,cv)=>pv+cv,0)
+            var canrates_avg = canrates_sum / canrates.length;
+            // Add the mean as a property to the current hexbin
+            if (canrates_avg !== undefined) {
+                collected.features[i].properties.canrate = canrates_avg;
+            } else {
+                collected.features[i].properties.canrate = "";
             }
         }
-    
+        console.log(collected);
 
-//         resetSwitcher("cancer_tracts");
-        $('.info').hide();
-        
-        $('.gridbtn').on("click",function(){
-            $('.layer-checks input').prop("checked", false);
-            map.setLayoutProperty('cancer_tracts', 'visibility', 'none');
-            $('.nitr_grid_switch').show();
-            $('.nitr_grid_switch input').prop( "checked", true );
-            $('.cancer_grid_switch').show();
-            makeGrid(10,2);
+
+        document.getElementById('export').onclick = function(e) {
+            var data = collected;
+            var convertedData = 'text/json;charset=utf-8,' + JSON.stringify(data);
+            // Create export
+            document.getElementById('export').setAttribute('href', 'data:' + convertedData);
+            document.getElementById('export').setAttribute('download','grid_data.geojson');    
+        };
+
+
+
+
+        getRegression(collected);
+        reg_breaks = getRegressBreaks(collected);
+        map.addSource('collected', {
+          type: 'geojson',
+          data: collected,
         })
-        
-        
-        //add geojson data as source for map layers
-        map.addSource('tracts', {
-            'type': 'geojson',
-            'data': tractdata,
-            'generateId': true
-        });
-
-        map.addSource('wells', {
-            'type': 'geojson',
-            'data': welldata,
-            'generateId': true
-        });
-
-
-        //add different map layers
-
+    
         map.addLayer({
-            'id': 'cancer_tracts',
+            'id': 'nitr_grid',
             'type': 'fill',
-            'source': 'tracts',
+            'source': 'collected',
             'layout': { 'visibility': 'visible' },
             'paint': {
                 'fill-opacity': [
@@ -351,370 +544,80 @@ function getRegressBreaks(regress_grid) {
                 'fill-color': [
                     'interpolate',
                     ['linear'],
-                    ['get','canrate'],    
-                    cancer_breaks[0],
-                    reds[0],
-                    cancer_breaks[1],
-                    reds[1],
-                    cancer_breaks[2],
-                    reds[2],
-                    cancer_breaks[3],
-                    reds[3],
-                    cancer_breaks[4],
-                    reds[4],
-                ],
-                'fill-outline-color': '#aaaaaa'
+                    ['get','nitr_ran'],    
+                    nitr_breaks[0],
+                    blues[0],
+                    nitr_breaks[1],
+                    blues[1],
+                    nitr_breaks[2],
+                    blues[2],
+                    nitr_breaks[3],
+                    blues[3],
+                    nitr_breaks[4],
+                    blues[4]
+                ]
+    
             }
-        },firstSymbolId)
-        
-        map.addLayer({
-            'id': 'nitrate_wells',
-            'type': 'circle',
-            'source': 'wells',
+    
+        },'nitrate_wells');
+    
+       map.addLayer({
+            'id': 'regress_grid',
+            'type': 'fill',
+            'source': 'collected',
             'layout': { 'visibility': 'none' },
             'paint': {
-                'circle-radius': 3,
-                'circle-color': [
-                    'interpolate',
-                    ['linear'],
-                    ['get','nitr_ran'],
-                     -2,
-                    '#ffffcc',
-                    3.4,
-                    '#a1dab4',
-                    6.8,
-                    '#41b6c4',
-                    10.2,
-                    '#2c7fb8',
-                    13.6,
-                    '#2c7fb8'
-               ]
+                'fill-opacity': [
+                    'case',
+                    ['boolean', ['feature-state', 'hover'], false],
+                    0.6,
+                    1
+                ],
+                'fill-color': [
+                    'step',
+                    ['get','residual'],    
+                    orPu[0],
+                    reg_breaks[0],
+                    orPu[1],
+                    reg_breaks[1],
+                    orPu[2],
+                    reg_breaks[2],
+                    orPu[3],
+                    reg_breaks[3],
+                    orPu[4]
+                ],
+                'fill-outline-color': '#aaaaaa'
+    
             }
-            
-
+    
+        },'nitrate_wells');
+    
+        map.addSource('border', {
+            'type': 'geojson',
+            'data': border,
+            'generateId': true
+        });
+        map.addLayer({
+            'id': 'border',
+            'type': 'line',
+            'source': 'border',
+            'paint': {
+                'line-color': '#999999',
+                'line-width': 1
+            }
         },firstSymbolId)
         
-        
-        
-        function makeGrid(size,exp) {
-            
-        
-            var nitr_options = {gridType: 'polygon', property: 'nitr_ran', units: 'kilometers', gridType: 'hex', weight: exp};
-            var nitr_grid = turf.interpolate(welldata, size, nitr_options);
-            map.addSource('nitr_grid', {
-              type: 'geojson',
-              data: nitr_grid,
-            })
+    
+    }
 
-            grid_nitrate = [];
-            $.each(nitr_grid.features, function(k, v) {
-                grid_nitrate.push(v.properties.nitr_ran);
-            });
-            nitr_breaks = getBreaks(grid_nitrate,5);
-           
-            
-            var cancer_options = {
-                gridType: 'point', // use points as the grid type, required to use the collect function
-                property: 'canrate', // interpolate values from the cancer rates
-                units: 'kilometers', // hexbin size units
-                weight: exp // distance decay coefficient, q
-            };
-            var cancer_grid = turf.interpolate(cancerdata, size, cancer_options);
-            
-            
-            collected = turf.collect(nitr_grid, cancer_grid, 'canrate', 'values');
-                
-            // Loop through each of the collected hexbins
-            for (var i in collected.features) {
-                
-                // The collect function builds an array of cancer rates for features intersecting the current hexbin
-                // Get the array of cancer rates for the current hexbin
-                var canrates = collected.features[i].properties.values;
-        
-                // Loop through each feature in the cancer rates array and sum them
-                var canrates_sum = 0;
-                for (var j in canrates) {
-        
-                    if (canrates.length > 0) {
-                        canrates_sum += parseFloat(canrates[j]);
-                    }
-        
-                }
-        
-                // Get the average cancer rate (sum / number of features in the array)
-                var canrates_avg = canrates_sum / canrates.length;
-        
-                // Add the average cancer rate to the canrate property of the current hexbin
-                if (canrates_avg !== undefined) {
-                    collected.features[i].properties.canrate = canrates_avg;
-                } else {
-                    collected.features[i].properties.canrate = "";
-                }
-        
-            }
-            
-            map.addLayer({
-                'id': 'nitr_grid',
-                'type': 'fill',
-                'source': 'nitr_grid',
-                'layout': { 'visibility': 'visible' },
-                'paint': {
-                    'fill-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        0.6,
-                        1
-                    ],
-                    'fill-color': [
-                        'interpolate',
-                        ['linear'],
-                        ['get','nitr_ran'],    
-                        nitr_breaks[0],
-                        reds[0],
-                        nitr_breaks[1],
-                        reds[1],
-                        nitr_breaks[2],
-                        reds[2],
-                        nitr_breaks[3],
-                        reds[3],
-                        nitr_breaks[4],
-                        reds[4]
-                    ]
 
-                }
-       
-            },'nitrate_wells');
 
-            getRegression(collected);
-            reg_breaks = getRegressBreaks(collected);
-            
-            map.addSource('regress_grid', {
-              type: 'geojson',
-              data: collected,
-            })
-           
-           map.addLayer({
-                'id': 'regress_grid',
-                'type': 'fill',
-                'source': 'regress_grid',
-                'layout': { 'visibility': 'none' },
-                'paint': {
-                    'fill-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        0.6,
-                        1
-                    ],
-                    'fill-color': [
-                        'step',
-                        ['get','residual'],    
-                        orPu[0],
-                        reg_breaks[0],
-                        orPu[1],
-                        reg_breaks[1],
-                        orPu[2],
-                        reg_breaks[2],
-                        orPu[3],
-                        reg_breaks[3],
-                        orPu[4]
-                    ],
-                    'fill-outline-color': '#aaaaaa'
 
-                }
-       
-            },'nitrate_wells');
 
-            map.addSource('border', {
-                'type': 'geojson',
-                'data': border,
-                'generateId': true
-            });
-            map.addLayer({
-                'id': 'border',
-                'type': 'line',
-                'source': 'border',
-                'paint': {
-                    'line-color': '#999999',
-                    'line-width': 1
-                }
-            },firstSymbolId)
+})
+        
 
-        }
          
-        map.on('click', 'nitr_grid', function (e) {
-            new mapboxgl.Popup()
-            .setLngLat(e.lngLat)
-            .setHTML(e.features[0].properties.nitr_ran)
-            .addTo(map);
-        });
-
-/*
-        ct = map.getSource('tracts')._data.features;
-        
-*/
-    
- 
-
-        // loop through layers to add listeners to each
-        $.each(layers,function(k,layer) {
-             map.on('mouseenter', layer, function() {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-
-/*
-            map.on('mousemove', layer, function(e) {
-                if (e.features.length > 0) {
-                    if (hoveredStateId) {
-                        map.setFeatureState(
-                            { source: 'tracts', id: hoveredStateId },
-                            { hover: false }
-                        );
-                    }
-                    hoveredStateId = e.features[0].id;
-                    map.setFeatureState(
-                        { source: 'tracts', id: hoveredStateId },
-                        { hover: true }
-                    );
-                }
-            });
-            map.on('mouseleave', layer, function() {
-                map.getCanvas().style.cursor = '';
-                if (hoveredStateId) {
-                    map.setFeatureState(
-                        { source: 'tracts', id: hoveredStateId },
-                        { hover: false }
-                    );
-                }
-            });
-*/
- 
-            
-        })
-
-
-//             make legend
-        // make a pointer cursor
-        map.getCanvas().style.cursor = 'default';
-/*         var legendblock = ""; */
-/*
-        $.each(colors, function(k,v) {
-            var legend_break;
-            if (k==0) {
-                legend_break = "<$"+addCommas(breaks[1]);
-            } else if (k==7) {
-                legend_break = ">$"+addCommas(breaks[7]);
-            } else {
-                legend_break = "$" + addCommas(breaks[k]) + "-$" + addCommas(breaks[k+1]-1);
-            }
-            legendblock += "<div>"
-                + "<span class='legend-key' style='background-color:"+v+"'></span>"
-                + "<span class='legend-val'>"+legend_break+"</span>"
-                + "</div>";
-        })
-*/
-/*
-        legendblock = "<div class='legend_parcels'><div class='legend-hed'>PROPERTY VALUE KEY</div>"+legendblock+"<div class='note'>" + cityData[city].name +" median single family home value: $"+addCommas(breaks[4])+"</div></div>";
-
-        legendblock += "<div class='legend_demographics'><div class='legend-hed'>NON-WHITE POPULATION</div>"
-        +        "<div class='legend-scale'>"
-        +            "<ul class='YlGnBu legend-labels'>"
-        +                "<li>"
-        +                    "<span class='q0-5'></span>"
-        +                "</li>"
-        +                "<li>"
-        +                    "<span class='q1-5'></span>"
-        +                "</li>"
-        +                "<li>"
-        +                    "<span class='q2-5'></span>"
-        +                "</li>"
-        +                "<li>"
-        +                    "<span class='q3-5'></span>"
-        +                "</li>"
-        +                "<li>"
-        +                    "<span class='q4-5'></span>"
-        +                "</li>"
-        +            "</ul>"
-        +            "<ul class='legend-labels tick-values'>"
-        +                "<li style='width:10%'></li>"
-        +                "<li>25%</li>"
-        +                "<li>40%</li>"
-        +                "<li>60%</li>"
-        +                "<li>80%</li>"
-        +            "</ul>"
-        +        "</div>"
-        +   "</div>";
-
-
-        
-        $("#legend").html(legendblock);
-        $("#legend").show();
-*/
-        
-
-        //Code for layer toggle
-        $(".layer-checks").show();
-        $(".layer-checks input").on("change",function(e) {
-            var thisLayer = $(this).data("layer");
-            map.setLayoutProperty(
-                thisLayer,
-                'visibility',
-                e.target.checked ? 'visible' : 'none'
-            );
-            
-//             resetSwitcher(thisLayer);
-//             $("input."+thisLayer).toggleClass("active");
-/*
-            var visibility = map.getLayoutProperty(thisLayer,'visibility');
-            if (visibility === 'visible') {
-                $(".btn."+thisLayer).removeClass("active");
-                map.setLayoutProperty(thisLayer, 'visibility', 'none');
-            } else {
-                $(".btn."+thisLayer).addClass("active");
-                map.setLayoutProperty(thisLayer, 'visibility', 'visible');
-            }
-*/
-            
-/*
-            
-            var clickedLayer = thisLayer;
-            $(".btn."+thisLayer).toggleClass("active");
-            var visibility = map.getLayoutProperty(clickedLayer,'visibility');
-            if (visibility === 'visible') {
-                $(".btn."+thisLayer).removeClass("active");
-                map.setLayoutProperty(clickedLayer, 'visibility', 'none');
-            } else {
-                $(".btn."+thisLayer).addClass("active");
-                map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
-            }
- 
-            if ($(".btn.parcels").hasClass("active")) {
-                $(".legend_parcels").show();
-            } else {
-                $(".legend_parcels").hide();
-            }
-            if ($(".btn.demographics").hasClass("active")) {
-                $(".legend_demographics").show();
-            } else {
-                $(".legend_demographics").hide();
-            }
-            if ((!$(".btn.parcels").hasClass("active")) && (!$(".btn.demographics").hasClass("active"))) {
-                $("#legend").hide();
-            }
-*/
-            
-            
-        })
-    })
-
- 
- 
- 
- 
-    //Function for a map click. 
-    function mapClick(p) {
-        console.log(p);
-   }
-    
     
     
 
