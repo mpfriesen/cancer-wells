@@ -30,19 +30,12 @@
 <body>
   <div>
     <h1 id="title">Nitrate and cancer<span>
-<!--       <button type="button" class="btn btn-primary aboutbtn" data-toggle="modal" data-target="#AboutModal">About Redlining</button></span> --></h1>
+      <button type="button" class="btn btn-primary aboutbtn" data-toggle="modal" data-target="#AboutModal">About</button></span></h1>
 
   </div>
     <!-- <nav id="menu" style="display:none"></nav> -->
     <div class="right-panels">
         <form class="layer-checks">
-    <!--
-            <div class="btn-group btn-group-sm" role="group" aria-label="Basic example">
-              <button type="button" data-layer="cancer_tracts" class="btn btn-secondary cancer_tracts active">Cancer rates</button>
-              <button type="button" data-layer="nitrate_wells" class="btn nitrate_wells btn-secondary">Nitrate levels</button>
-              <button type="button" data-layer="grid" class="btn grid btn-secondary">Grid</button>
-            </div>
-    -->
             <div class="custom-control custom-switch cancer_tracts_switch">
               <input type="checkbox" class="custom-control-input" data-legend="tract" data-others="" data-layer="cancer_tracts" id="customSwitch1" checked>
               <label class="custom-control-label" for="customSwitch1">Cancer rates</label>
@@ -111,15 +104,13 @@
 
     <div id='map'>
     </div>
-    <div id="loading-background" class='flex-parent flex-parent--center-cross flex-parent--center-main absolute top right bottom left bg-darken10 z5'>
-        <div id="spinner" class='flex-child loading'></div>
-    </div>
 
 
         <div class="left-panels left-top">
             <div id="overview">
+                
               <h6>Analyze the data</h6>
-              <p>Enter a hexbin size and a distance decay coefficient (between 1.5 and 2.5 is recommended) to examine the evidence of a link between nitrate levels in the drinking water and cancer incidence rates.</p>
+              <p>Enter a hexbin size and a distance decay coefficient (between 1.5 and 2.5 is recommended) to see where high incidences of cancer may align geographically with high levels of nitrate found in wells. Note: the smaller the hexbin size, the longer the grid will take to render; 10 is recommended. </p>
                 <form>
                   <div class="form-group">
                     <input type="text" class="form-control form-control-sm" onkeypress="return isValid(this,event)" id="hexbin_size" aria-describedby="emailHelp" placeholder="Hexbin size (km.)">
@@ -142,33 +133,17 @@
         </div>
 
         <!-- Modal -->
-<!--
-        <div class="modal fade" id="AboutModal" tabindex="-1" role="dialog" aria-labelledby="AboutRedlining" aria-hidden="true">
+        <div class="modal fade" id="AboutModal" tabindex="-1" role="dialog" aria-labelledby="About" aria-hidden="true">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="AboutRedlining">About Redlining</h5>
+                <h5 class="modal-title" id="AboutRedlining">About this map</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
                 </button>
               </div>
               <div class="modal-body">
-                <p>Redlining refers to the discriminatory act of refusing to lend money, extend credit to borrowers, or show real estate in certain areas of a town. The term was dubbed from the idea that mortgage lenders would draw “red lines” around
-                  neighborhoods which they did not want to make loans. </p>
-
-                <p>Faced with a housing shortage in the 1930’s, the federal government established the Federal Housing Administration (FHA), which established practices that allowed further racial segregation and discrimination against minorities by
-                  refusing to insure loans to neighborhoods deemed less desirable.
-                </p>
-                <p>In 1935, the Home Owners Loan Corporation (HOLC) created “residential security maps” for 239 cities, which graded neighborhoods based on loan desirability. Type “A” neighborhoods were colored green and were reserved for affluent
-                  suburbs on the outskirts of towns. Type “B”, or blue neighborhoods were considered desirable. However, type “C”, or yellow neighborhoods, and type “D”, or red neighborhoods were listed as declining. Typically the neighborhoods
-                  listed as declining contained older housing stock near the center of town, and frequently these areas contained minorities, immigrants, or were primarily African American.
-                </p>
-                <p>While the practice of redlining occurred prior to the establishment of the FHA, the HOLC maps further exacerbated racial segregation and urban decay by publishing these maps for use by lenders. For decades, the FHA used the HOLC
-                  maps in their appraisal manuals which instructed banks to steer clear of areas with certain racial groups. Withholding mortgages in these areas made it much harder for neighborhoods to attract families to purchase homes.
-                </p>
-                <p>The Fair Housing Act was passed in 1968 to combat the practice of redlining, making it unlawful for lenders to discriminate based on race or national origin. The Community Reinvestment Act passed in 1977 further reduced
-                  discriminatory practices by requiring banks to apply the same lending criteria in all communities.
-                </p>
+                <p>Is there a relationship between nitrate levels in drinking water and cancer incidence in Wisconsin? At right is a map of cancer incidence rates per 100,000 by Census tract. If you click on the "Nitrate levels" button, you'll see what nitrate levels have been found at wells throughout the state. In order to find out if there may be a connection, we need to interpolate the well nitrate data to create a statewide surface grid of nitrate values. We then match that with a similar grid of interpolated cancer incidence values to come up with predicted cancer values. We then run a regression analysis on the predicted and observed cancer values to see how the model performs.</p>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -176,14 +151,8 @@
             </div>
           </div>
         </div>
--->
   <!--scripts-->
-    <script>
-        
-        
-        
 
-    </script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
     <script src="js/main.js"></script>

@@ -272,12 +272,6 @@ map.on('load',function() {
         'source': 'tracts',
         'layout': { 'visibility': 'visible' },
         'paint': {
-            'fill-opacity': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                0.6,
-                1
-            ],
             'fill-color': [
                 'interpolate',
                 ['linear'],
@@ -293,7 +287,18 @@ map.on('load',function() {
                 cancer_breaks[4],
                 reds[4],
             ],
-            'fill-outline-color': '#aaaaaa'
+            'fill-outline-color': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                '#000000',
+                '#aaaaaa'
+            ],
+            'fill-opacity': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                0.6,
+                1
+            ]
         }
     },firstSymbolId)
     
@@ -303,22 +308,28 @@ map.on('load',function() {
         'source': 'wells',
         'layout': { 'visibility': 'none' },
         'paint': {
-            'circle-radius': 3,
+            'circle-radius': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                10,
+                3
+            ],
             'circle-color': [
                 'interpolate',
                 ['linear'],
                 ['get','nitr_ran'],
-                 -2,
-                '#ffffcc',
-                3.4,
-                '#a1dab4',
-                6.8,
-                '#41b6c4',
-                10.2,
-                '#2c7fb8',
-                13.6,
-                '#2c7fb8'
-           ]
+                well_breaks[0],
+                blues[0],
+                well_breaks[1],
+                blues[1],
+                well_breaks[2],
+                blues[2],
+                well_breaks[3],
+                blues[3],
+                well_breaks[4],
+                blues[4],
+            ]
+
         }
         
 
@@ -361,9 +372,6 @@ map.on('load',function() {
             .setHTML("<strong>Cancer rate:</strong> "+(e.features[0].properties.canrate*1000).toFixed())
             .addTo(map);
         });
-        map.on('mouseenter', "cancer_tracts", function() {
-            map.getCanvas().style.cursor = 'pointer';
-        });
 
          map.on('click', "nitrate_wells", function (e) {
             new mapboxgl.Popup()
@@ -371,18 +379,12 @@ map.on('load',function() {
             .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"ppm")
             .addTo(map);
         });
-        map.on('mouseenter', "nitrate_wells", function() {
-            map.getCanvas().style.cursor = 'pointer';
-        });
 
          map.on('click', "nitr_grid", function (e) {
             new mapboxgl.Popup()
             .setLngLat(e.lngLat)
             .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"ppm")
             .addTo(map);
-        });
-        map.on('mouseenter', "nitr_grid", function() {
-            map.getCanvas().style.cursor = 'pointer';
         });
 
          map.on('click', "regress_grid", function (e) {
@@ -395,12 +397,110 @@ map.on('load',function() {
             .setHTML(html)
             .addTo(map);
         });
-        map.on('mouseenter', "nitr_grid", function() {
-            map.getCanvas().style.cursor = 'pointer';
+
+
+       var tractID = null;
+    
+        map.on('mousemove', 'cancer_tracts', (e) => {
+    
+          map.getCanvas().style.cursor = 'pointer';
+          // Set variables equal to the current feature's magnitude, location, and time
+          var canrate = e.features[0].properties.canrate;
+    
+          // Check whether features exist
+          if (e.features.length > 0) {
+            // Display the magnitude, location, and time in the sidebar
+//             canDisplay.textContent = canrate;
+    
+            // If quakeID for the hovered feature is not null,
+            // use removeFeatureState to reset to the default behavior
+            if (tractID) {
+              map.removeFeatureState({
+                source: "tracts",
+                id: tractID
+              });
+            }
+    
+            tractID = e.features[0].id;
+    
+            // When the mouse moves over the earthquakes-viz layer, set the
+            // feature state for the feature under the mouse
+            map.setFeatureState({
+              source: 'tracts',
+              id: tractID,
+            }, {
+              hover: true
+            });
+    
+          }
+        });
+    
+        map.on("mouseleave", "cancer_tracts", function() {
+    
+          if (tractID) {
+            map.setFeatureState({
+              source: 'tracts',
+              id: tractID
+            }, {
+              hover: false
+            });
+          }
+          tractID = null;
+          // Remove the information from the previously hovered feature from the sidebar
+//           canDisplay.textContent = '';
+          // Reset the cursor style
+          map.getCanvas().style.cursor = '';
         });
 
 
 
+
+       var wellID = null;
+    
+        map.on('mousemove', 'nitrate_wells', (e) => {
+    
+          map.getCanvas().style.cursor = 'pointer';
+          // Check whether features exist
+          if (e.features.length > 0) {
+            // If quakeID for the hovered feature is not null,
+            // use removeFeatureState to reset to the default behavior
+            if (wellID) {
+              map.removeFeatureState({
+                source: "wells",
+                id: wellID
+              });
+            }
+    
+            wellID = e.features[0].id;
+    
+            // When the mouse moves over the earthquakes-viz layer, set the
+            // feature state for the feature under the mouse
+            map.setFeatureState({
+              source: 'wells',
+              id: wellID,
+            }, {
+              hover: true
+            });
+    
+          }
+        });
+    
+        map.on("mouseleave", "nitrate_wells", function() {
+    
+          if (tractID) {
+            map.setFeatureState({
+              source: 'wells',
+              id: wellID
+            }, {
+              hover: false
+            });
+          }
+          wellID = null;
+          // Remove the information from the previously hovered feature from the sidebar
+//           canDisplay.textContent = '';
+          // Reset the cursor style
+          map.getCanvas().style.cursor = '';
+        });
 
 
 
@@ -527,6 +627,7 @@ map.on('load',function() {
         map.addSource('collected', {
           type: 'geojson',
           data: collected,
+          'generateId': true
         })
     
         map.addLayer({
