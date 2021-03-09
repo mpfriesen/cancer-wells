@@ -349,3 +349,4 @@ td.desire {
 .wells-legend td.grade { width: 1em; border-radius: 1em; }
 .wells-legend table { border-collapse: separate; }
 .credit { position: absolute; bottom: 15px; font-size: 11px;}
+.finished { margin-top: 5px; }

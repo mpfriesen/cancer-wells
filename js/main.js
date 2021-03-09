@@ -52,7 +52,7 @@ function getRegression(collected) {
     var m = regress_eq.m;
     var b = regress_eq.b;
     
-    var regress_eq_disp = "y = " + parseFloat(m).toFixed(5) + "x + " + parseFloat(b).toFixed(5);
+    var regress_eq_disp = "y&nbsp;=&nbsp;" + parseFloat(m).toFixed(5) + "x + " + parseFloat(b).toFixed(5);
     console.log("Regression Equation: " + regress_eq_disp);
 
     // Loop through each of the collected hexbins
@@ -83,7 +83,7 @@ function getRegression(collected) {
     console.log("r-Squared: " + r_squared);
     
     var statblock = "<div class='eq_line'><strong>Regression equation:</strong> <span class='equation'>"+regress_eq_disp+"</span></div>"
-        +   "<div class='r2_line'><strong>R-squared:</strong> <span class='rsquared'>"+r_squared+"</span></div>";
+        +   "<div class='r2_line'><strong>R<sup>2</sup>:</strong> <span class='rsquared'>"+r_squared+"</span></div>";
         
     $(".regression").html(statblock);
     
@@ -241,8 +241,8 @@ map.on('load',function() {
     $('.gridbtn').on("click",function(){
         var hex_size = Number($('#hexbin_size').val());
         var exp = Number($('#coeff').val());
-        if (exp<1) {
-            $('.error-text').text('Please enter a number greater than 1');
+        if (exp<=0) {
+            $('.error-text').text('Please enter a number greater than 0');
             $('#coeff').val('');
         } else {
             makeGrid(hex_size,exp);
@@ -614,9 +614,13 @@ map.on('load',function() {
         document.getElementById('export').onclick = function(e) {
             var data = collected;
             var convertedData = 'text/json;charset=utf-8,' + JSON.stringify(data);
+            var sizeclean = size.toString().replace(".","-");
+            var expclean = exp.toString().replace(".","-");
+            var filename = 'grid_data_'+sizeclean+'_'+expclean+'.geojson';
             // Create export
             document.getElementById('export').setAttribute('href', 'data:' + convertedData);
-            document.getElementById('export').setAttribute('download','grid_data.geojson');    
+            document.getElementById('export').setAttribute('download',filename);
+            $(".finished").html("File saved as <strong>"+filename+".</strong>");    
         };
 
 
