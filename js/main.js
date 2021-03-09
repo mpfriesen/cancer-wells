@@ -376,14 +376,14 @@ map.on('load',function() {
          map.on('click', "nitrate_wells", function (e) {
             new mapboxgl.Popup()
             .setLngLat(e.lngLat)
-            .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"ppm")
+            .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"mg/L")
             .addTo(map);
         });
 
          map.on('click', "nitr_grid", function (e) {
             new mapboxgl.Popup()
             .setLngLat(e.lngLat)
-            .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"ppm")
+            .setHTML("<strong>Nitrate levels:</strong> "+e.features[0].properties.nitr_ran.toFixed(1)+"mg/L")
             .addTo(map);
         });
 
