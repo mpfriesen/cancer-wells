@@ -155,6 +155,7 @@ div.mapboxgl-control-container > div.mapboxgl-ctrl-top-left > div.mapboxgl-ctrl.
   padding-right: 8px;
   overflow-y: scroll;
   width: 160px;
+  position: relative;
 }
 
 #features {
@@ -347,3 +348,4 @@ td.desire {
 .wells-legend tr { line-height: .75em; }
 .wells-legend td.grade { width: 1em; border-radius: 1em; }
 .wells-legend table { border-collapse: separate; }
+.credit { position: absolute; bottom: 15px; font-size: 11px;}
